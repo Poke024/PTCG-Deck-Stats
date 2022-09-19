@@ -2,9 +2,9 @@ import os
 import win32clipboard
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.firefox.service import Service as FirefoxService
-from selenium import webdriver
-# from webdriver_manager.firefox import GeckoDriverManager
 from selenium.webdriver.common.by import By
+from selenium import webdriver
+from card-stats import CardStats
 
 browser_type = input("Select a browser:\n1.) Chrome\n2.) Firefox\nChoice: ")
 while browser_type != "1" and browser_type != "2":
@@ -38,7 +38,7 @@ while not deck_found:
     except:
         targ_deck = input("No deck could be located with given name. Please try again: ")
 
-decklists = []
+deck_list = []
 copied_decks = 0
 index = 0
 while copied_decks < int(limit):
@@ -51,8 +51,14 @@ while copied_decks < int(limit):
         export_button = driver.find_element(By.CLASS_NAME, "export")
         export_button.click()
         win32clipboard.OpenClipboard()
-        decklists.append(win32clipboard.GetClipboardData())
+        deck = win32clipboard.GetClipboardData()
         win32clipboard.CloseClipboard()
+        stats_string = driver.find_element(By.CLASS_NAME, "details").getText()
+        points = stats_string.split()[0]
+        win_loss = stats_string.split()[2]
+        # tuple format: ('deck', 'points', 'win_loss')
+        deck_tuple = (deck, points, win_loss)
+        deck_list.append(deck_tuple)
         copied_decks += 1
         driver.back()
         index += 1
@@ -62,20 +68,10 @@ while copied_decks < int(limit):
         index += 1
 driver.close()
 
-data = {}
-for deck in decklists:
-    lines = deck.split('\n')
-    for line in lines:
-        if line != "":
-            new_data = line.split(' ', 1)
-            if new_data[1] in data.keys():
-                data[new_data[1]] += int(new_data[0])
-            else:
-                data[new_data[1]] = int(new_data[0])
+card_dict = {}
+for deck_stats in deck_list:
+    card_list = deck_stats[0]
+    pts = deck_stats[1]
+    win_rate = deck_stats[2]
+    
 
-for card, count in data.items():
-    data[card] = count / len(decklists)
-
-sorted_data = dict(sorted(data.items(), key=lambda item: item[1], reverse=True))
-for card, count in sorted_data.items():
-    print(f"{count} {card}")
