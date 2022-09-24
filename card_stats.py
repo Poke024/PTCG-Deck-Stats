@@ -1,7 +1,8 @@
 class CardStats:
-    def __init__(self, name:str, set:str):
+    def __init__(self, name:str, set:str, setnum:int):
         self.name = name
         self.set = set
+        self.setnum = setnum
         # A array that tracks the number of copies in each deck.
         self._counts = []
         self._avg_count = 0
@@ -18,7 +19,7 @@ class CardStats:
 
     # Calculates and returns the average winrate for decks with a given number of card copies.
     def get_Count_WR(self, count:int):
-        if len(self._count_WR[count]) == 0:
+        if count not in self._count_WR.keys():
             return "N/A"
         else:
             return (sum(self._count_WR[count])/len(self._count_WR[count]))
@@ -34,7 +35,10 @@ class CardStats:
 
     # Adds a winrate percentage from a deck to a given number of card copies
     def add_Count_WR(self, count:int, rate:float):
-        self._count_WR[count].append(float(rate))
+        if count not in self._count_WR.keys():
+            self._count_WR[count] = [float(rate)]
+        else:
+            self._count_WR[count].append(float(rate))
 
     # Returns the number of copies that appears in every deck
     # Returns 1 - 4 dependent on copies
@@ -43,4 +47,4 @@ class CardStats:
         return self._count_in_all
 
     def __str__(self):
-        return (f"{self.card} ({self.set}) Avg Count: {self.get_Avg_Count()}")
+        return (f"{self.name} ({self.set} {self.setnum}) Avg Count: {self.get_Avg_Count()}, 1 Count Avg WR: {self.get_Count_WR(1)}, 2 Count Avg WR: {self.get_Count_WR(2)}, 3 Count Avg WR: {self.get_Count_WR(3)}, 4 Count Avg WR: {self.get_Count_WR(4)}")

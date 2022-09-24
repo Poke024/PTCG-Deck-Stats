@@ -4,7 +4,7 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.common.by import By
 from selenium import webdriver
-from card-stats import CardStats
+from card_stats import CardStats
 
 browser_type = input("Select a browser:\n1.) Chrome\n2.) Firefox\nChoice: ")
 while browser_type != "1" and browser_type != "2":
@@ -54,7 +54,8 @@ while copied_decks < int(limit):
         win32clipboard.OpenClipboard()
         deck = win32clipboard.GetClipboardData()
         win32clipboard.CloseClipboard()
-        stats_string = driver.find_element(By.CLASS_NAME, "details").getText()
+        stats_string = driver.find_element(By.CLASS_NAME, "details")
+        stats_string = stats_string.text
         # stats_string: '# points (W-L-D)'
         # Splits to ['#', 'points', '(W-L-D)']
         points = stats_string.split()[0]
@@ -66,6 +67,7 @@ while copied_decks < int(limit):
         driver.back()
         index += 1
     except Exception as e:
+        print(e)
         # Current decklist is not available or does not have an export button
         driver.back()
         index += 1
@@ -73,7 +75,7 @@ driver.close()
 
 card_dict = {}
 for deck_stats in deck_list:
-    card_list = deck_stats[0]
+    print(f"deck_stats: {deck_stats}")
     # record_string: '#Wins-#Losses-#Draws'
     record_string = (deck_stats[1].replace('(', '')).replace(')', '')
     # wld: ['#Wins', '#Losses', '#Draws']
@@ -81,14 +83,28 @@ for deck_stats in deck_list:
     # iterate through wld and convert each string to an integer
     for i in range(len(wld)):
         wld[i] = int(wld[i])
-    winrate = float(wins / (wins + losses + draws))
+    winrate = float(wld[0] / (wld[0] + wld[1] + wld[2]))
+
+    card_list = deck_stats[0]
+    card_list = (card_list.replace('\n\n', '\n')).split('\n')
     for card in card_list:
-        # ["count", "name", "(set)"]
-        card_stats = card.split()
-        name = card_stats[1]
-        set = (card_stats[2].replace('(', '')).replace(')', '')
-        if (card + ' ' + set) not in card_dict.keys():
-            new_card = CardStats(name, set)
-            count = int(card_stats[0])
+        # ["count", "name + (set)"]
+        card_stats = card.split(' ')
+        print(f"card_stats: {card_stats}")
+        count = int(card_stats[0])
+        name = ' '.join(card_stats[1:-2])
+        set = card_stats[-2]
+        setnum = int(card_stats[-1])
+        if (str(name) + ' ' + set) not in card_dict.keys():
+            new_card = CardStats(name, set, setnum)
             new_card.add_Count(count)
             new_card.add_Count_WR(count, winrate)
+            card_dict[str(name) + ' ' + set + ' ' + str(setnum)] = new_card
+        else:
+            cur_card = card_dict[(card + ' ' + set)]
+            cur_card.add_Count(count)
+            cur_card.add_Count_WR(count, winrate)
+            card_dict[str(name) + ' ' + set + ' ' + str(setnum)] = cur_card
+
+for key in card_dict.keys():
+    print(card_dict[key])
